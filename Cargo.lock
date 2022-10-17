@@ -10,9 +10,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cod"
-version = "1.1.2"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39a9b8caa442580c4563a06c53737ae897c53864ae03b21a951316bc76741ac1"
+checksum = "2c1ba3fdde5a8b77e9d2fca21666b14b1e0b9b3d21215f97c94127c3e0fcba5d"
 
 [[package]]
 name = "core-foundation"

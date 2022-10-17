@@ -1,3 +1,4 @@
+use std::ops::Not;
 use std::time::Instant;
 use std::{process::exit, time::Duration};
 
@@ -13,6 +14,20 @@ enum Direction {
     Left,
     Down,
     Right,
+}
+
+impl Not for Direction {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Self::None => Self::None,
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
+            Self::Up => Self::Down,
+            Self::Down => Self::Up,
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -54,7 +69,9 @@ struct Snake {
     pub tail: Vec<Pos>,
     pub dir: Direction,
 
+    next_dir: Direction,
     max: Pos,
+    grace: bool,
 }
 
 impl Snake {
@@ -62,12 +79,16 @@ impl Snake {
         Self {
             head: Pos { x: 1, y: 1 },
             tail: Vec::new(),
-            max: Pos { x: max_x, y: max_y },
             dir: Direction::None,
+
+            next_dir: Direction::None,
+            max: Pos { x: max_x, y: max_y },
+            grace: true,
         }
     }
 
     pub fn update(&mut self) {
+        self.dir = self.next_dir;
         if !self.tail.is_empty() {
             self.tail.pop();
             self.tail.insert(0, self.head);
@@ -79,6 +100,23 @@ impl Snake {
             Direction::Down => self.head.y += 1,
             Direction::Right => self.head.x += 1,
             Direction::None => {}
+        }
+
+        if self.tail.contains(&self.head) && self.grace {
+            self.grace = false;
+            match self.dir {
+                Direction::Up => self.head.y += 1,
+                Direction::Left => self.head.x += 1,
+                Direction::Down => self.head.y -= 1,
+                Direction::Right => self.head.x -= 1,
+                Direction::None => {}
+            }
+
+            color_fg(1);
+            rect('!', self.max.x + 2, self.max.y + 2, self.max.x + 4, self.max.y + 4);
+            exit(1);
+        } else {
+            self.grace = true;
         }
 
         if self.head.x > self.max.x {
@@ -99,7 +137,9 @@ impl Snake {
     }
 
     pub fn aim(&mut self, dir: Direction) {
-        self.dir = dir;
+        if dir != !self.dir {
+            self.next_dir = dir;
+        }
     }
 
     pub fn eat(&mut self) {
@@ -156,17 +196,32 @@ fn main() {
     let mut snake = Snake::new(13, 10);
 
     let keyboard = DeviceState::new();
-    let mut timer = Timer::new(0.3, true);
+    let mut timer = Timer::new(0.17, true);
 
     loop {
         clear();
+
+        let keys: Vec<Keycode> = keyboard.get_keys();
+        for key in keys {
+            match key {
+                Keycode::W | Keycode::Up => snake.aim(Direction::Up),
+                Keycode::A | Keycode::Left => snake.aim(Direction::Left),
+                Keycode::S | Keycode::Down => snake.aim(Direction::Down),
+                Keycode::D | Keycode::Right => snake.aim(Direction::Right),
+                Keycode::Q | Keycode::Escape => snake.lose(),
+                _ => {}
+            }
+        }
 
         if timer.poll() {
             snake.update();
 
             if snake.head == food.pos {
                 snake.eat();
-                food.eat();
+
+                while food.pos == snake.head || snake.tail.contains(&food.pos) {
+                    food.eat();
+                }
             }
 
             color_fg(6);
@@ -185,18 +240,7 @@ fn main() {
             pixel('O', snake.head.x + 1, snake.head.y + 1);
 
             bot();
-        }
-
-        let keys: Vec<Keycode> = keyboard.get_keys();
-        for key in keys {
-            match key {
-                Keycode::W | Keycode::Up => snake.aim(Direction::Up),
-                Keycode::A | Keycode::Left => snake.aim(Direction::Left),
-                Keycode::S | Keycode::Down => snake.aim(Direction::Down),
-                Keycode::D | Keycode::Right => snake.aim(Direction::Right),
-                Keycode::Q | Keycode::Escape => snake.lose(),
-                _ => {}
-            }
+            flush();
         }
 
         sleep(0.02);
