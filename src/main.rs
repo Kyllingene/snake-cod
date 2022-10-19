@@ -7,6 +7,10 @@ use rand::{thread_rng, Rng};
 use cod::*;
 use device_query::{DeviceQuery, DeviceState, Keycode};
 
+fn sleep(s: f32) {
+    std::thread::sleep(Duration::from_secs_f32(s));
+}
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 enum Direction {
     None,
@@ -191,7 +195,7 @@ impl Timer {
     }
 }
 
-fn main() {
+fn main() -> ! {
     let mut food = Food::new(13, 10);
     let mut snake = Snake::new(13, 10);
 
@@ -226,7 +230,7 @@ fn main() {
 
             color_fg(6);
             rect('+', 1, 1, 15, 12);
-            text(format!("Score: {}", snake.tail.len()), 1, 13);
+            text(format!("Score: {}", snake.tail.len()).chars(), 1, 13);
 
             color_fg(11);
             pixel('@', food.pos.x + 1, food.pos.y + 1);
